@@ -1,7 +1,7 @@
 package updater
 
 import java.awt._
-import java.awt.event.{MouseAdapter, MouseEvent}
+import java.awt.event.{MouseAdapter, MouseEvent, WindowEvent, WindowFocusListener}
 import javax.swing._
 
 object Example extends App {
@@ -10,19 +10,49 @@ object Example extends App {
 
   def show(): Unit = {
     System.setProperty("apple.awt.UIElement", "true")
-    //  System.setProperty("apple.laf.useScreenMenuBar", "true")
-    //System.setProperty("com.apple.mrj.application.apple.menu.about.name", "WikiTeX")
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
-    val f = new JDialog()
-    tray(f)
-    f.setSize(400, 600)
-    f.setTitle("update-checker")
-    f.setVisible(false)
-    f.setResizable(false)
-    f.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
-    val frameDragListener = new Example.FrameDragListener(f)
-    f.addMouseListener(frameDragListener)
-    f.addMouseMotionListener(frameDragListener)
+
+
+    import java.awt.GraphicsEnvironment
+    import java.awt.Toolkit
+    import java.awt.geom.Area
+    val gd = GraphicsEnvironment.getLocalGraphicsEnvironment.getDefaultScreenDevice
+    val bounds = gd.getDefaultConfiguration.getBounds
+    val zzz = Toolkit.getDefaultToolkit.getScreenInsets(gd.getDefaultConfiguration)
+
+    val safeBounds = new Rectangle(bounds)
+    safeBounds.x += zzz.left
+    safeBounds.y += zzz.top
+    safeBounds.width -= (zzz.left + zzz.right)
+    safeBounds.height -= (zzz.top + zzz.bottom)
+
+    System.out.println("Bounds = " + bounds)
+    System.out.println("SafeBounds = " + safeBounds)
+
+    val area = new Area(bounds)
+    area.subtract(new Area(safeBounds))
+    System.out.println("Area = " + area.getBounds)
+
+    val dialog = new JDialog()
+    dialog.setBackground(new Color(1.0f, 1.0f, 1.0f))
+    tray(dialog)
+    dialog.addWindowFocusListener(new WindowFocusListener {
+      override def windowLostFocus(e: WindowEvent): Unit = {
+        println("lost")
+      }
+
+      override def windowGainedFocus(e: WindowEvent): Unit = {
+
+      }
+    })
+    dialog.setSize(400, 600)
+    dialog.setTitle("update-checker")
+    dialog.setVisible(false)
+    dialog.setResizable(false)
+    dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
+    val frameDragListener = new Example.FrameDragListener(dialog)
+    dialog.addMouseListener(frameDragListener)
+    dialog.addMouseMotionListener(frameDragListener)
 
     val card1 = new JPanel()
     val insets = card1.getInsets
@@ -31,8 +61,9 @@ object Example extends App {
     b1.setBounds(25 + insets.left, 5 + insets.top, size.width, size.height)
     card1.add(b1)
 
-    setUndecorated(f)
-    f.setAlwaysOnTop(true)
+    setUndecorated(dialog)
+    dialog.setVisible(false)
+    dialog.setAlwaysOnTop(true)
     println("done")
   }
 
@@ -65,18 +96,25 @@ object Example extends App {
     val image = loadImage("foo.png")
 
     val icon = new TrayIcon(image)
-    val menu = new PopupMenu()
-    icon.setPopupMenu(menu)
     icon.addMouseListener(new MouseAdapter {
 
       override def mousePressed(e: MouseEvent): Unit = {
         if (!dialog.isVisible) {
           setUndecorated(dialog)
+          println(icon.getSize)
+
+          println(e.getPoint)
+          if (e.getPoint.y < 100) {
+            dialog.setLocation(location(dialog.getBounds, DisplayPos.tr))
+          } else {
+            dialog.setLocation(location(dialog.getBounds, DisplayPos.br))
+          }
+
+          dialog.setVisible(true)
         } else {
           dialog.setVisible(false)
         }
-        println(icon.getSize)
-        println(e.getPoint)
+
       }
 
     })
@@ -84,18 +122,20 @@ object Example extends App {
   }
 
   private def setUndecorated(dialog: JDialog): Unit = {
-    dialog.dispose()
+    dialog.removeNotify()
     dialog.setUndecorated(true)
-    dialog.setBackground(new Color(1.0f, 1.0f, 1.0f, 0.5f))
-    dialog.setLocation(location(dialog.getBounds, DisplayPos.tr))
-    dialog.setVisible(true)
+    dialog.setOpacity(0.5f)
+    dialog.addNotify()
   }
 
   private def setDecorated(dialog: JDialog): Unit = {
-    dialog.dispose()
-    dialog.setBackground(new Color(1.0f, 1.0f, 1.0f, 1f))
-    dialog.setUndecorated(false)
-    dialog.setVisible(true)
+    if (dialog.isUndecorated) {
+      dialog.removeNotify()
+      dialog.setOpacity(1f)
+      dialog.setUndecorated(false)
+      dialog.addNotify()
+      dialog.setVisible(true)
+    }
   }
 
   import java.awt.event.MouseAdapter
@@ -114,6 +154,7 @@ object Example extends App {
 
     override def mouseDragged(e: MouseEvent): Unit = {
       val currCoords = e.getLocationOnScreen
+      dialog.setOpacity(0.8f)
       dialog.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y)
     }
   }
@@ -121,7 +162,7 @@ object Example extends App {
   case class DisplayPos(name: String, down: Double, left: Double)
 
   object DisplayPos {
-    val tr = DisplayPos("topRight", 0.1, 0.9)
+    val tr = DisplayPos("topRight", 0.09, 0.9)
     val tl = DisplayPos("topLeft", 0.1, 0.1)
     val br = DisplayPos("bottomRight", 0.9, 0.9)
     val bl = DisplayPos("bottomLeft", 0.9, 0.1)
