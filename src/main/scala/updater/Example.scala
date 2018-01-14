@@ -10,62 +10,50 @@ object Example extends App {
 
   def show(): Unit = {
     System.setProperty("apple.awt.UIElement", "true")
-  //  System.setProperty("apple.laf.useScreenMenuBar", "true")
+    //  System.setProperty("apple.laf.useScreenMenuBar", "true")
     //System.setProperty("com.apple.mrj.application.apple.menu.about.name", "WikiTeX")
     UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     val f = new JDialog()
     tray(f)
-    f.setUndecorated(true)
-    f.setSize(400, 150)
-    f.setSize(400,600)
-    f.setBackground(new Color(1.0f, 1.0f, 1.0f, 0.5f))
-    f.setTitle("release")
+    f.setSize(400, 600)
+    f.setTitle("update-checker")
     f.setVisible(false)
-
     f.setResizable(false)
     f.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
     val frameDragListener = new Example.FrameDragListener(f)
     f.addMouseListener(frameDragListener)
     f.addMouseMotionListener(frameDragListener)
 
-
-    val contentPane = f.getContentPane
-
-    //Create the "cards".
     val card1 = new JPanel()
-    val color = new Color(59, 63, 66)
-    //card1.setBackground(color)
     val insets = card1.getInsets
     val b1 = new JButton("Button 3")
     val size = b1.getPreferredSize
     b1.setBounds(25 + insets.left, 5 + insets.top, size.width, size.height)
     card1.add(b1)
 
-   // contentPane.add(card1)
-
-    def location(size: Rectangle, displayPos: DisplayPos): Point = {
-      val moveDown = displayPos.down
-      val moveLeft = displayPos.left
-
-      Some(java.awt.Toolkit.getDefaultToolkit.getScreenSize)
-        .map(in ⇒ (in.height, in.width))
-        .map(in ⇒ in.copy(_1 = in._1 - size.height))
-        .map(in ⇒ in.copy(_2 = in._2 - size.width))
-        .map(in ⇒ in.copy(_1 = (in._1 * moveDown).toInt, (in._2 * moveLeft).toInt))
-        .map(in ⇒ {
-          val x: Int = in._2
-          val y: Int = in._1
-          new Point(x, y)
-        }).get
-    }
-
-    f.setLocation(location(f.getBounds, DisplayPos.tr))
-    f.setVisible(true)
+    setUndecorated(f)
     f.setAlwaysOnTop(true)
     println("done")
   }
 
-  def tray(dialog:JDialog): Unit = {
+  private def location(size: Rectangle, displayPos: DisplayPos): Point = {
+    val moveDown = displayPos.down
+    val moveLeft = displayPos.left
+
+    Some(java.awt.Toolkit.getDefaultToolkit.getScreenSize)
+      .map(in ⇒ (in.width, in.height))
+      .map { in ⇒ println(in); in }
+      .map(in ⇒ in.copy(_1 = in._1 - size.width))
+      .map(in ⇒ in.copy(_2 = in._2 - size.height))
+      .map(in ⇒ in.copy(_1 = (in._1 * moveLeft).toInt, (in._2 * moveDown).toInt))
+      .map(in ⇒ {
+        val x: Int = in._1
+        val y: Int = in._2
+        new Point(x, y)
+      }).get
+  }
+
+  def tray(dialog: JDialog): Unit = {
     import javax.swing.ImageIcon
 
     def loadImage(f: String): Image = {
@@ -83,8 +71,7 @@ object Example extends App {
 
       override def mousePressed(e: MouseEvent): Unit = {
         if (!dialog.isVisible) {
-
-          dialog.setVisible(true)
+          setUndecorated(dialog)
         } else {
           dialog.setVisible(false)
         }
@@ -94,22 +81,31 @@ object Example extends App {
 
     })
     systemTray.add(icon)
+  }
 
+  private def setUndecorated(dialog: JDialog): Unit = {
+    dialog.dispose()
+    dialog.setUndecorated(true)
+    dialog.setBackground(new Color(1.0f, 1.0f, 1.0f, 0.5f))
+    dialog.setLocation(location(dialog.getBounds, DisplayPos.tr))
+    dialog.setVisible(true)
+  }
+
+  private def setDecorated(dialog: JDialog): Unit = {
+    dialog.dispose()
+    dialog.setBackground(new Color(1.0f, 1.0f, 1.0f, 1f))
+    dialog.setUndecorated(false)
+    dialog.setVisible(true)
   }
 
   import java.awt.event.MouseAdapter
 
-  class FrameDragListener(val frame: JDialog) extends MouseAdapter {
-    private var mouseDownCompCoords:Point = null
+  class FrameDragListener(val dialog: JDialog) extends MouseAdapter {
+    private var mouseDownCompCoords: Point = null
 
     override def mouseReleased(e: MouseEvent): Unit = {
       mouseDownCompCoords = null
-      if (frame.isUndecorated) {
-        frame.dispose()
-        frame.setBackground(new Color(1.0f, 1.0f, 1.0f, 1f))
-        frame.setUndecorated(false)
-        frame.setVisible(true)
-      }
+      setDecorated(dialog)
     }
 
     override def mousePressed(e: MouseEvent): Unit = {
@@ -118,7 +114,7 @@ object Example extends App {
 
     override def mouseDragged(e: MouseEvent): Unit = {
       val currCoords = e.getLocationOnScreen
-      frame.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y)
+      dialog.setLocation(currCoords.x - mouseDownCompCoords.x, currCoords.y - mouseDownCompCoords.y)
     }
   }
 
