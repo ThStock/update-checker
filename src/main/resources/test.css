@@ -1,0 +1,22 @@
+.innerFxmlClass {
+  #pane{
+  -fx-background-size: 1200 900;
+  -fx-background-radius: 8 8 8 8;
+  -fx-border-radius: 8 8 8 8;
+  -fx-background-color: black;
+  }
+}
+
+.mainFxmlClass {
+  #pane{
+    -fx-background-size: 1200 900;
+    -fx-background-color: transparent;
+  }
+}
+
+.innerImage {
+  #pane{
+    -fx-background-size: 1200 900;
+    -fx-background-color: white;
+  }
+}
