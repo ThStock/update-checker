@@ -3,7 +3,9 @@
   -fx-background-size: 1200 900;
   -fx-background-radius: 8 8 8 8;
   -fx-border-radius: 8 8 8 8;
-  -fx-background-color: black;
+  -fx-background-color: #2b2b2b;
+  -fx-border-color: silver;
+  -fx-border-width: 0px;
   }
 }
 

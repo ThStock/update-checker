@@ -85,23 +85,12 @@ object Example extends App {
   }
 
   def tray(dialog: JDialog): Unit = {
-    import javax.swing.ImageIcon
 
-    def loadImage(f: String): Image = {
-      val url = getClass.getClassLoader.getResource(f)
-      new ImageIcon(url).getImage
-    }
-
-    val systemTray = java.awt.SystemTray.getSystemTray
-    val image = loadImage("foo.png")
-
-    val icon = new TrayIcon(image)
-    icon.addMouseListener(new MouseAdapter {
+    Tryer.apply(new MouseAdapter {
 
       override def mousePressed(e: MouseEvent): Unit = {
         if (!dialog.isVisible) {
           setUndecorated(dialog)
-          println(icon.getSize)
 
           println(e.getPoint)
           if (e.getPoint.y < 100) {
@@ -118,7 +107,7 @@ object Example extends App {
       }
 
     })
-    systemTray.add(icon)
+
   }
 
   private def setUndecorated(dialog: JDialog): Unit = {
